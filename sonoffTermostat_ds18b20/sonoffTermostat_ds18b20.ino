@@ -26,13 +26,14 @@
 #include <DallasTemperature.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
+#include <ESP8266HTTPClient.h>
 #include "FS.h"
 
 #include <MyWifiSettings.h>
 const char* wifiSsid = MYWIFISSID;
 const char* wifiPassword = MYWIFIPASSWORD;
 
-IPAddress ip(192,168,0,73);
+IPAddress ip(192,168,0,75);
 IPAddress gateway(192,168,0,1);
 IPAddress subnet(255,255,255,0);
 
@@ -55,6 +56,31 @@ static long startPress = 0;
 float onTemperature;
 float offTemperature;
 
+void callUrl(String url) {
+  Serial.print("Call url: ");
+  Serial.println(url);
+  HTTPClient http;
+  http.begin(url);
+  int httpCode = http.GET();
+  if(httpCode > 0) {
+        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+  } 
+  else {
+        Serial.printf("[HTTP] GET... failed, error: %d\n", httpCode);
+  }
+  http.end();        
+}
+
+void callUrls(String urls) {
+  int currentPos = 0;
+  int pos;
+  Serial.println("Call urls: ");
+  while ((pos = urls.indexOf('|', currentPos)) > -1) {
+    String url = urls.substring(currentPos, pos);
+    callUrl(url);
+    currentPos = pos + 1;
+  }
+}
 
 bool saveFile(String file, String data) {
   Serial.print("Save file: ");
@@ -70,8 +96,8 @@ bool saveFile(String file, String data) {
   return configFile;  
 }
 
-float readFile(String file, float defaultValue) {
-  float value = defaultValue;
+String readFile(String file, String defaultValue) {
+  String value = defaultValue;
 
   Serial.print("Read file: ");
   Serial.println(file);
@@ -81,18 +107,17 @@ float readFile(String file, float defaultValue) {
     Serial.println("Failed to open file for reading");
   }
   else {
-      String content = configFile.readString();  
-      value = content.toFloat();     
+      value = configFile.readString();       
   }
   return value;
 }
 
 float getOnTemperature() {
-  return readFile("OnTemperature", 23);
+  return readFile("OnTemperature", "23").toFloat();
 }
 
 float getOffTemperature() {
-  return readFile("OffTemperature", 25);
+  return readFile("OffTemperature", "25").toFloat();
 }
 
 void routeGetOnTemperature() {
@@ -124,6 +149,32 @@ void routeSetTemperature() {
   }
   else {
     server.send ( 400, "text/plain", "Set OffTemperature parameter missing. Please provide on or/and off.");
+  }
+}
+
+void routeSetOnUrls() {
+  Serial.println("routeSetOnUrls");
+  if (server.hasArg("urls")) {
+    String value = server.arg("urls");
+    saveFile("onUrls", value);    
+    Serial.println(value);
+    server.send ( 200, "text/plain", "urls on set.");
+  }
+  else {
+    server.send ( 400, "text/plain", "Set on urls parameter missing. Please provide urls.");
+  }
+}
+
+void routeSetOffUrls() {
+  Serial.println("routeSetOffUrls");
+  if (server.hasArg("urls")) {
+    String value = server.arg("urls");
+    saveFile("offUrls", value);    
+    Serial.println(value);
+    server.send ( 200, "text/plain", "urls off set.");
+  }
+  else {
+    server.send ( 400, "text/plain", "Set off urls parameter missing. Please provide urls.");
   }
 }
 
@@ -185,12 +236,14 @@ void turnOn() {
   digitalWrite(SONOFF_LED, LOW);
   relayState = HIGH;
   setState(relayState);
+  callUrls(readFile("onUrls", ""));
 }
 
 void turnOff() {
   digitalWrite(SONOFF_LED, HIGH);
   relayState = LOW;
   setState(relayState);
+  callUrls(readFile("offUrls", ""));  
 }
 
 void toggleState() {
@@ -200,8 +253,8 @@ void toggleState() {
 void toggle() {
   Serial.println("toggle state");
   Serial.println(relayState);
-  relayState = relayState == HIGH ? LOW : HIGH;
-  setState(relayState);
+  if (relayState == HIGH) turnOff();
+  else turnOn();
 }
 
 void routeRelayOn() {
@@ -295,6 +348,8 @@ void setup()
   server.on("/relay/status", routeRelayStatus);
   server.on("/relay/on", routeRelayOn);
   server.on("/relay/off", routeRelayOff);
+  server.on("/set/on/urls", routeSetOnUrls);
+  server.on("/set/off/urls", routeSetOffUrls);  
   server.onNotFound(routeNotFound);
   server.begin();
   Serial.println("HTTP server started");    
