@@ -29,11 +29,15 @@
 #include <ESP8266HTTPClient.h>
 #include "FS.h"
 
+//for LED status
+#include <Ticker.h>
+Ticker ticker;
+
 #include <MyWifiSettings.h>
 const char* wifiSsid = MYWIFISSID;
 const char* wifiPassword = MYWIFIPASSWORD;
 
-IPAddress ip(192,168,0,75);
+IPAddress ip(192,168,0,80);
 IPAddress gateway(192,168,0,1);
 IPAddress subnet(255,255,255,0);
 
@@ -48,6 +52,8 @@ const int CMD_BUTTON_CHANGE = 1;
 int cmd = CMD_WAIT;
 int relayState = HIGH;
 
+int powerState = HIGH;
+
 //inverted button state
 int buttonState = HIGH;
 
@@ -56,7 +62,13 @@ static long startPress = 0;
 float onTemperature;
 float offTemperature;
 
-void callUrl(String url) {
+void tick()
+{
+  int state = digitalRead(SONOFF_LED);  // get the current state of GPIO1 pin
+  digitalWrite(SONOFF_LED, !state);     // set pin to the opposite state
+}
+
+int callUrl(String url) {
   Serial.print("Call url: ");
   Serial.println(url);
   HTTPClient http;
@@ -68,7 +80,9 @@ void callUrl(String url) {
   else {
         Serial.printf("[HTTP] GET... failed, error: %d\n", httpCode);
   }
-  http.end();        
+  http.end(); 
+
+  return httpCode;
 }
 
 void callUrls(String urls) {
@@ -178,6 +192,16 @@ void routeSetOffUrls() {
   }
 }
 
+bool isConnectedToWifi(void) {
+  int test = 20;
+  while (test && WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");  
+    test--;
+  }
+  return test;
+}
+
 void connectToWifi() {
   WiFi.disconnect(true);
   Serial.print("Connect to WiFi: ");  
@@ -200,6 +224,15 @@ void WiFiEvent(WiFiEvent_t event) {
             connectToWifi();
             break;
     }
+}
+
+void checkWifi() {       
+  if (!isConnectedToWifi()) {
+      Serial.println("\nDisconnected from Wifi try to reconnect in 5 sec.");
+      delay(5000);
+      //connectToWifi();
+      ESP.reset();
+  }  
 }
 
 void routeNotFound() {
@@ -233,17 +266,22 @@ void routeRelayStatus() {
 }
 
 void turnOn() {
-  digitalWrite(SONOFF_LED, LOW);
-  relayState = HIGH;
-  setState(relayState);
-  callUrls(readFile("onUrls", ""));
+  if (powerState == HIGH) {
+    ticker.attach(0.5, tick);
+    relayState = HIGH;
+    setState(relayState);
+    callUrls(readFile("onUrls", ""));
+  }
 }
 
 void turnOff() {
-  digitalWrite(SONOFF_LED, HIGH);
-  relayState = LOW;
-  setState(relayState);
-  callUrls(readFile("offUrls", ""));  
+  if (powerState == HIGH) {
+    ticker.detach();
+    digitalWrite(SONOFF_LED, LOW);
+    relayState = LOW;
+    setState(relayState);
+    callUrls(readFile("offUrls", ""));  
+  }
 }
 
 void toggleState() {
@@ -251,10 +289,32 @@ void toggleState() {
 }
 
 void toggle() {
-  Serial.println("toggle state");
-  Serial.println(relayState);
-  if (relayState == HIGH) turnOff();
-  else turnOn();
+  Serial.println("toggle power state");
+  Serial.println(powerState);
+  if (powerState == HIGH) {
+    turnOff();
+    digitalWrite(SONOFF_LED, HIGH);
+    powerState = LOW;
+  }
+  else {
+    digitalWrite(SONOFF_LED, LOW);
+    powerState = HIGH;
+  }
+}
+
+void routePowerToggle() {
+  toggle();
+  routePowerStatus();
+}
+
+void routePowerStatus() {
+  Serial.println("Route power status");
+  if (powerState == HIGH) {
+    server.send ( 200, "text/plain", "{\"status\": \"on\"}");  
+  }
+  else {
+    server.send ( 200, "text/plain", "{\"status\": \"off\"}");  
+  }
 }
 
 void routeRelayOn() {
@@ -294,17 +354,19 @@ void routeTemperatureStatus() {
 }
 
 void relayTemperatureToggle() {
-  sensors.requestTemperatures();
-  float t = sensors.getTempCByIndex(0);
-  if (!isnan(t)) {
-    if (onTemperature && t < onTemperature && !isOn()) {
-      Serial.println("Turn on");
-      turnOn();
+  if (powerState == HIGH) {
+    sensors.requestTemperatures();
+    float t = sensors.getTempCByIndex(0);
+    if (!isnan(t)) {
+      if (t < onTemperature && !isOn()) {
+        Serial.println("Turn on");
+        turnOn();
+      }
+      else if (t > offTemperature && isOn()) {
+        Serial.println("Turn off");
+        turnOff();
+      } 
     }
-    else if (offTemperature && t > offTemperature && isOn()) {
-      Serial.println("Turn off");
-      turnOff();
-    } 
   }
 }
 
@@ -341,6 +403,8 @@ void setup()
 
   connectToWifi();
   server.on("/", routeRoot);
+  server.on("/power/status", routePowerStatus);
+  server.on("/power/toggle", routePowerToggle);
   server.on("/get/on/temperature", routeGetOnTemperature);
   server.on("/get/off/temperature", routeGetOffTemperature);
   server.on("/set/temperature", routeSetTemperature);
@@ -371,7 +435,7 @@ void loop()
         if (buttonState == LOW && currentState == HIGH) {
           long duration = millis() - startPress;
           if (duration < 1000) {
-            Serial.println("short press - toggle relay");
+            Serial.println("short press - toggle power");
             toggle();
           } else if (duration < 5000) {
             Serial.println("medium press - reset");
