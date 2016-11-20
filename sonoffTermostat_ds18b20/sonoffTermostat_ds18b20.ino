@@ -37,7 +37,7 @@ Ticker ticker;
 const char* wifiSsid = MYWIFISSID;
 const char* wifiPassword = MYWIFIPASSWORD;
 
-IPAddress ip(192,168,0,80);
+IPAddress ip(192,168,0,82);
 IPAddress gateway(192,168,0,1);
 IPAddress subnet(255,255,255,0);
 
@@ -52,7 +52,7 @@ const int CMD_BUTTON_CHANGE = 1;
 int cmd = CMD_WAIT;
 int relayState = HIGH;
 
-int powerState = HIGH;
+int powerState = LOW;
 
 //inverted button state
 int buttonState = HIGH;
@@ -61,6 +61,8 @@ static long startPress = 0;
 
 float onTemperature;
 float offTemperature;
+
+String currentMode;
 
 void tick()
 {
@@ -166,6 +168,20 @@ void routeSetTemperature() {
   }
 }
 
+
+void routeSetRelayUrl() {
+  Serial.println("routeSetRelayUrl");
+  if (server.hasArg("url")) {
+    String value = server.arg("url");
+    saveFile("relayUrl", value);    
+    Serial.println(value);
+    server.send ( 200, "text/plain", "relay url set.");
+  }
+  else {
+    server.send ( 400, "text/plain", "Set relay url parameter missing. Please provide url.");
+  }
+}
+
 void routeSetOnUrls() {
   Serial.println("routeSetOnUrls");
   if (server.hasArg("urls")) {
@@ -226,9 +242,23 @@ void WiFiEvent(WiFiEvent_t event) {
     }
 }
 
+long lastCheck = millis();
+bool checkWifiByUrlCall() {
+  bool isValid = true;
+  if (millis() - lastCheck > 60000) { // check every minute
+    lastCheck = millis();
+    Serial.print("Call check url: ");
+    int httpCode = callUrl("http://192.168.0.1/");
+    Serial.println(httpCode);
+    isValid = httpCode == 200;
+  }
+
+  return isValid;
+}
+
 void checkWifi() {       
-  if (!isConnectedToWifi()) {
-      Serial.println("\nDisconnected from Wifi try to reconnect in 5 sec.");
+  if (!isConnectedToWifi() || !checkWifiByUrlCall()) {
+      Serial.println("\nDisconnected from Wifi, reset in 5 sec.");
       delay(5000);
       //connectToWifi();
       ESP.reset();
@@ -266,7 +296,7 @@ void routeRelayStatus() {
 }
 
 void turnOn() {
-  if (powerState == HIGH) {
+  if (powerState == HIGH && !isOn()) {
     ticker.attach(0.5, tick);
     relayState = HIGH;
     setState(relayState);
@@ -275,7 +305,7 @@ void turnOn() {
 }
 
 void turnOff() {
-  if (powerState == HIGH) {
+  if (powerState == HIGH && isOn()) {
     ticker.detach();
     digitalWrite(SONOFF_LED, LOW);
     relayState = LOW;
@@ -299,6 +329,39 @@ void toggle() {
   else {
     digitalWrite(SONOFF_LED, LOW);
     powerState = HIGH;
+  }
+}
+
+long lastCheckForRelayUrl = millis();
+void relayUrlCheck() {
+  if (powerState == HIGH  && currentMode == "relayUrl" && millis() - lastCheckForRelayUrl > 60000) { // every minute
+    lastCheckForRelayUrl = millis();
+    String url = readFile("relayUrl", "");
+    if (url.length()) {
+      Serial.print("Call relay url: ");
+      Serial.println(url);
+      HTTPClient http;
+      http.begin(url);
+      int httpCode = http.GET();
+      Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+      if(httpCode > 0 && httpCode == HTTP_CODE_OK) {
+        String payload = http.getString();
+        Serial.println(payload);
+        if (payload.indexOf("\"on\"") > -1 ) {
+          Serial.println("Relay url on, turn on relay.");
+          turnOn();
+        }
+        else {
+          Serial.println("Relay url not on, turn off relay.");
+          turnOff();
+        }
+      } 
+      else {
+        Serial.println("Cant reach url, turn off relay.");
+        turnOff();
+      }
+      http.end(); 
+    }
   }
 }
 
@@ -354,7 +417,7 @@ void routeTemperatureStatus() {
 }
 
 void relayTemperatureToggle() {
-  if (powerState == HIGH) {
+  if (powerState == HIGH && currentMode == "temperature") {
     sensors.requestTemperatures();
     float t = sensors.getTempCByIndex(0);
     if (!isnan(t)) {
@@ -368,6 +431,25 @@ void relayTemperatureToggle() {
       } 
     }
   }
+}
+
+void routeSetMode() {
+  Serial.println("routeSetMode");
+  if (server.hasArg("mode")) {
+    currentMode = server.arg("mode");
+    saveFile("mode", currentMode); 
+    routeModeStatus();
+  }
+  else {
+    server.send ( 400, "text/plain", "Set mode parameter missing. Please provide mode.");
+  }
+}
+
+void routeModeStatus() {    
+  Serial.println("routeModeStatus");
+  String value = readFile("mode", "temperature");
+  String response =  "{\"status\": \"" + value + "\"}";
+  server.send ( 200, "text/plain", response);
 }
 
 void setup()
@@ -396,6 +478,8 @@ void setup()
   pinMode(SONOFF_RELAY, OUTPUT);
 
   turnOff();
+
+  currentMode = readFile("mode", "temperature");
   
   Serial.println("done setup");
 
@@ -414,6 +498,9 @@ void setup()
   server.on("/relay/off", routeRelayOff);
   server.on("/set/on/urls", routeSetOnUrls);
   server.on("/set/off/urls", routeSetOffUrls);  
+  server.on("/set/relay/url", routeSetRelayUrl);
+  server.on("/set/mode", routeSetMode);
+  server.on("/mode/status", routeModeStatus);
   server.onNotFound(routeNotFound);
   server.begin();
   Serial.println("HTTP server started");    
@@ -453,6 +540,7 @@ void loop()
   }
 
   relayTemperatureToggle();
+  relayUrlCheck();
 }
 
 
