@@ -2,6 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPClient.h>
+#include <ESP8266httpUpdate.h>
 
 #include <MyWifiSettings.h>
 const char* wifiSsid = MYWIFISSID;
@@ -104,17 +105,6 @@ double getTemp() {
   return temp;
 }
 
-void routeNotFound() {
-  Serial.print("Route Not Found ");
-  Serial.println(server.uri());
-  server.send ( 404, "text/plain", "Not Found!");
-}
-
-void routeRoot() {
-  Serial.println("Route Root");
-  server.send ( 200, "text/plain", "Hello.");
-}
-
 void restart() {
   ESP.reset();
   delay(1000);
@@ -140,6 +130,31 @@ void routeTemperatureStatus() {
   }
 }
 
+void routeFirmwareUpdate() {
+  Serial.println("routeFirmwareUpdate");
+  if (server.hasArg("url")) {
+    String ip = server.arg("url");
+    Serial.println(ip);
+
+    server.send ( 200, "text/plain", "Try to update firmware.");
+    ESPhttpUpdate.update(ip, 80, "/firmware.bin");
+  }
+  else {
+    server.send ( 400, "text/plain", "Update firmware parameter missing. Please provide ip/domain.");
+  }  
+}
+
+void routeNotFound() {
+  Serial.print("Route Not Found ");
+  Serial.println(server.uri());
+  server.send ( 404, "text/plain", "Not Found!");
+}
+
+void routeRoot() {
+  Serial.println("Route Root");
+  server.send ( 200, "text/plain", "Hello.\n\n/temperature/status\n/firmware/update"); // todo: create a function listing all route base on server setting
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -147,6 +162,7 @@ void setup()
   connectToWifi();
   server.on("/", routeRoot);
   server.on("/temperature/status", routeTemperatureStatus);
+  server.on("/firmware/update", routeFirmwareUpdate);
   server.onNotFound(routeNotFound);
   server.begin();
   Serial.println("HTTP server started");    

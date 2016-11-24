@@ -440,6 +440,20 @@ void setRelayInFunctionOfTemperature(float t) {
     }
 }
 
+void routeFirmwareUpdate() {
+  Serial.println("routeFirmwareUpdate");
+  if (server.hasArg("url")) {
+    String ip = server.arg("url");
+    Serial.println(ip);
+
+    server.send ( 200, "text/plain", "Try to update firmware.");
+    ESPhttpUpdate.update(ip, 80, "/firmware.bin");
+  }
+  else {
+    server.send ( 400, "text/plain", "Update firmware parameter missing. Please provide ip/domain.");
+  }  
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -475,6 +489,7 @@ void setup()
 
   connectToWifi();
   server.on("/", routeRoot);
+  server.on("/firmware/update", routeFirmwareUpdate);
   server.on("/power/status", routePowerStatus);
   server.on("/power/toggle", routePowerToggle);
   server.on("/get/on/temperature", routeGetOnTemperature);
