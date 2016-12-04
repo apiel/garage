@@ -1,31 +1,45 @@
 void initController() {
-  server.on("/", routeRoot);
-  server.on("/firmware/update", routeFirmwareUpdate);
   server.on("/power/status", routePowerStatus);
   server.on("/power/toggle", routePowerToggle);
   server.on("/get/on/temperature", routeGetOnTemperature);
   server.on("/get/off/temperature", routeGetOffTemperature);
-  server.on("/set/temperature", routeSetTemperature);
   server.on("/temperature/status", routeTemperatureStatus);
   server.on("/relay/status", routeRelayStatus);
-  server.on("/relay/on", routeRelayOn);
-  server.on("/relay/off", routeRelayOff);
-  server.on("/set/on/urls", routeSetOnUrls);
-  server.on("/set/off/urls", routeSetOffUrls);  
-  //server.on("/set/temperature/url", routeSetTemperatureUrl);
+  //server.on("/get", routeGet); // we could implement get
+  server.on("/set", routeSet);
+  server.on("/firmware/update", routeFirmwareUpdate);
+  server.on("/", routeRoot);
   server.onNotFound(routeNotFound);  
 }
 
-void routeGetOnTemperature() {
-  Serial.println("Route GetOnTemperature");
-  String response =  "{\"status\": " + String(getOnTemperature()) + "}";
-  server.send ( 200, "text/plain", response);
+boolean isValidVariable(String varName) {
+  return varName == "OnTemperature"
+      || varName == "OffTemperature"
+      || varName == "onUrls"
+      || varName == "offUrls"
+      || varName == "mockTemp";
 }
 
-void routeGetOffTemperature() {
-  Serial.println("Route GetOffTemperature");
-  String response =  "{\"status\": " + String(getOffTemperature()) + "}";
-  server.send ( 200, "text/plain", response);
+void routeSet() {
+  int pos = server.args();
+  if (pos > 0) {
+    while(pos-- > 0) {
+      String varName = server.argName(pos);
+      if (isValidVariable(varName)) {
+        String value = server.arg(pos);
+        Serial.println("Set variable " + varName + ": " + value);    
+        saveFile(varName, value);    
+      }
+      else {
+        server.send ( 400, "text/plain", "Invalid variable name. " + varName);
+        break;
+      }
+    }
+    server.send ( 200, "text/plain", "Variable set.");
+  }
+  else {
+    server.send ( 400, "text/plain", "Set value parameter missing. Please provide a variable to set.");
+  }
 }
 
 void routeNotFound() {
@@ -37,6 +51,34 @@ void routeNotFound() {
 void routeRoot() {
   Serial.println("Route Root");
   server.send ( 200, "text/plain", "Hello.");
+}
+
+void routeFirmwareUpdate() {
+  Serial.println("routeFirmwareUpdate");
+  if (server.hasArg("url")) {
+    String ip = server.arg("url");
+    Serial.println(ip);
+
+    server.send ( 200, "text/plain", "Try to update firmware.");
+    ESPhttpUpdate.update(ip, 80, "/firmware.bin");
+  }
+  else {
+    server.send ( 400, "text/plain", "Update firmware parameter missing. Please provide ip/domain.");
+  }  
+}
+
+//-------------------------------------------------------------
+
+void routeGetOnTemperature() {
+  Serial.println("Route GetOnTemperature");
+  String response =  "{\"status\": " + String(getOnTemperature()) + "}";
+  server.send ( 200, "text/plain", response);
+}
+
+void routeGetOffTemperature() {
+  Serial.println("Route GetOffTemperature");
+  String response =  "{\"status\": " + String(getOffTemperature()) + "}";
+  server.send ( 200, "text/plain", response);
 }
 
 void routeRelayStatus() {
@@ -64,16 +106,6 @@ void routePowerStatus() {
   }
 }
 
-void routeRelayOn() {
-  turnOn();
-  routeRelayStatus();
-}
-
-void routeRelayOff() {
-  turnOff();
-  routeRelayStatus();
-}
-
 void routeTemperatureStatus() {
   Serial.println("Route temperature status");
   sensors.requestTemperatures();
@@ -84,88 +116,6 @@ void routeTemperatureStatus() {
   else {
     String response =  "{\"status\": " + String(t) + "}";
     server.send ( 200, "text/plain", response);
-  }
-}
-
-void routeFirmwareUpdate() {
-  Serial.println("routeFirmwareUpdate");
-  if (server.hasArg("url")) {
-    String ip = server.arg("url");
-    Serial.println(ip);
-
-    server.send ( 200, "text/plain", "Try to update firmware.");
-    ESPhttpUpdate.update(ip, 80, "/firmware.bin");
-  }
-  else {
-    server.send ( 400, "text/plain", "Update firmware parameter missing. Please provide ip/domain.");
-  }  
-}
-
-// All file saving could be combine in one function and could handle multiple save at once
-// String argName(int i);          // get request argument name by number
-// int args();                     // get arguments count
-//  String arg(String name);        // get request argument value by name
-//  String arg(int i);              // get request argument value by number
-// Foreach args, check argName is a valid file to save data, then save
-
-void routeSetTemperature() {
-  Serial.println("routeSetTemperature");
-  if (server.hasArg("on") || server.hasArg("off")) {
-    if (server.hasArg("on")) {
-      String value = server.arg("on");
-      offTemperature = value.toFloat();
-      saveFile("OnTemperature", value);
-    }
-    if (server.hasArg("off")) {
-      String value = server.arg("off");
-      offTemperature = value.toFloat();
-      saveFile("OffTemperature", value);
-    }    
-    server.send ( 200, "text/plain", "Temperature set.");
-  }
-  else {
-    server.send ( 400, "text/plain", "Set OffTemperature parameter missing. Please provide on or/and off.");
-  }
-}
-
-/*
-void routeSetTemperatureUrl() {
-  Serial.println("routeSetTemperatureUrl");
-  if (server.hasArg("url")) {
-    temperatureUrl = server.arg("url");
-    saveFile("temperatureUrl", temperatureUrl);    
-    Serial.println(temperatureUrl);
-    server.send ( 200, "text/plain", "Temperature url set.");
-  }
-  else {
-    server.send ( 400, "text/plain", "Set temperature url parameter missing. Please provide url.");
-  }
-}
-*/
-
-void routeSetOnUrls() {
-  Serial.println("routeSetOnUrls");
-  if (server.hasArg("urls")) {
-    String value = server.arg("urls");
-    saveFile("onUrls", value);    
-    Serial.println(value);
-    server.send ( 200, "text/plain", "urls on set.");
-  }
-  else {
-    server.send ( 400, "text/plain", "Set on urls parameter missing. Please provide urls.");
-  }
-}
-
-void routeSetOffUrls() {
-  Serial.println("routeSetOffUrls");
-  if (server.hasArg("urls")) {
-    String value = server.arg("urls");
-    saveFile("offUrls", value);    
-    Serial.println(value);
-    server.send ( 200, "text/plain", "urls off set.");
-  }
-  else {
-    server.send ( 400, "text/plain", "Set off urls parameter missing. Please provide urls.");
   }
 }
 

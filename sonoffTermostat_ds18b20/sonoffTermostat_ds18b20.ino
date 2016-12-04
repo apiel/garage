@@ -45,7 +45,6 @@ DallasTemperature sensors(&oneWire);
 
 float onTemperature;
 float offTemperature;
-String temperatureUrl;
 
 int relayState = LOW; // Off
 int powerState = LOW; // Off
@@ -99,43 +98,11 @@ void toggle() {
   }
 }
 
-/*
-long lastCheckForTemperatureUrl = millis();
-void temperatureUrlCheck() {
-  if (powerIsOn()  && temperatureUrl.length() > 0 && millis() - lastCheckForTemperatureUrl > 3000) { // every minute 60000
-    lastCheckForTemperatureUrl = millis();
-    Serial.print("Call temperature url: ");
-    Serial.println(temperatureUrl);
-    HTTPClient http;
-    http.begin(temperatureUrl);
-    int httpCode = http.GET();
-    Serial.printf("[HTTP] GET... code: %d\n", httpCode);
-    if(httpCode > 0 && httpCode == HTTP_CODE_OK) {
-      String pattern = "{\"status\": "; 
-      String payload = http.getString();
-      Serial.println(payload);
-      if (payload.indexOf(pattern) > -1 ) {
-        String t = payload.substring(pattern.length(), payload.indexOf("}"));
-        Serial.println("Temperature from remote url: " + t);
-        setRelayInFunctionOfTemperature(t.toFloat());
-      }
-      else {
-        Serial.println("Temperature url invalid, turn off relay.");
-        turnOff();
-      }
-    } 
-    else {
-      Serial.println("Cant temperature url, turn off relay.");
-      turnOff();
-    }
-    http.end(); 
-  }
-}
-*/
 void relayTemperatureToggle() {
-  if (powerIsOn() && temperatureUrl.length() == 0) {
+  if (powerIsOn()) {
     sensors.requestTemperatures();
-    float t = sensors.getTempCByIndex(0);
+    //float t = sensors.getTempCByIndex(0);
+    float t = readFile("mockTemp", "21").toFloat();
     setRelayInFunctionOfTemperature(t);
   }
 }
@@ -159,7 +126,7 @@ void setRelayInFunctionOfTemperature(float t) {
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   if (!SPIFFS.begin()) {
     Serial.println("Failed to mount file system");
@@ -181,14 +148,12 @@ void setup()
   pinMode(SONOFF_RELAY, OUTPUT);
 
   turnOff();
-
-  temperatureUrl = readFile("temperatureUrl", "");
   
   Serial.println("done setup");
 
   sensors.begin();
 
-  IPAddress ip(192,168,0,85);
+  IPAddress ip(192,168,1,222);
   wifi.init(MYWIFISSID, MYWIFIPASSWORD, ip);
   wifi.connect();
 
@@ -203,8 +168,7 @@ void loop()
   server.handleClient();
   sonoffButtonTrigger();
   relayTemperatureToggle();
-  //temperatureUrlCheck();
-  wifi.check();
+  //wifi.check(); <----------------------- to uncomment
 }
 
 

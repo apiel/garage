@@ -32,8 +32,8 @@ bool saveFile(String file, String data) {
 String readFile(String file, String defaultValue) {
   String value = defaultValue;
 
-  Serial.print("Read file: ");
-  Serial.println(file);
+  //Serial.print("Read file: ");
+  //Serial.println(file);
 
   File configFile = SPIFFS.open(file, "r");
   if (!configFile) {
