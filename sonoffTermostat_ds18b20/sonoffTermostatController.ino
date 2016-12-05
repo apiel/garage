@@ -27,7 +27,7 @@ void routeSet() {
       String varName = server.argName(pos);
       if (isValidVariable(varName)) {
         String value = server.arg(pos);
-        Serial.println("Set variable " + varName + ": " + value);    
+        _logln("Set variable " + varName + ": " + value);    
         saveFile(varName, value);    
       }
       else {
@@ -43,21 +43,21 @@ void routeSet() {
 }
 
 void routeNotFound() {
-  Serial.print("Route Not Found ");
-  Serial.println(server.uri());
+  _logln("Route Not Found ");
+  _logln(server.uri());
   server.send ( 404, "text/plain", "Not Found!");
 }
 
 void routeRoot() {
-  Serial.println("Route Root");
+  _logln("Route Root");
   server.send ( 200, "text/plain", "Hello.");
 }
 
 void routeFirmwareUpdate() {
-  Serial.println("routeFirmwareUpdate");
+  _logln("routeFirmwareUpdate");
   if (server.hasArg("url")) {
     String ip = server.arg("url");
-    Serial.println(ip);
+    _logln(ip);
 
     server.send ( 200, "text/plain", "Try to update firmware.");
     ESPhttpUpdate.update(ip, 80, "/firmware.bin");
@@ -70,19 +70,19 @@ void routeFirmwareUpdate() {
 //-------------------------------------------------------------
 
 void routeGetOnTemperature() {
-  Serial.println("Route GetOnTemperature");
+  _logln("Route GetOnTemperature");
   String response =  "{\"status\": " + String(getOnTemperature()) + "}";
   server.send ( 200, "text/plain", response);
 }
 
 void routeGetOffTemperature() {
-  Serial.println("Route GetOffTemperature");
+  _logln("Route GetOffTemperature");
   String response =  "{\"status\": " + String(getOffTemperature()) + "}";
   server.send ( 200, "text/plain", response);
 }
 
 void routeRelayStatus() {
-  Serial.println("Route relay status");
+  _logln("Route relay status");
   if (relayIsOn()) {
     server.send ( 200, "text/plain", "{\"status\": \"on\"}");
   }
@@ -97,7 +97,7 @@ void routePowerToggle() {
 }
 
 void routePowerStatus() {
-  Serial.println("Route power status");
+  _logln("Route power status");
   if (powerIsOn()) {
     server.send ( 200, "text/plain", "{\"status\": \"on\"}");  
   }
@@ -107,7 +107,7 @@ void routePowerStatus() {
 }
 
 void routeTemperatureStatus() {
-  Serial.println("Route temperature status");
+  _logln("Route temperature status");
   sensors.requestTemperatures();
   float t = sensors.getTempCByIndex(0);
   if (isnan(t)) {

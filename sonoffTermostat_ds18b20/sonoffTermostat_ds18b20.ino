@@ -85,8 +85,8 @@ void turnOff() {
 }
 
 void toggle() {
-  Serial.println("toggle power state");
-  Serial.println(powerState);
+  _logln("toggle power state");
+  _logln(powerState);
   if (powerIsOn()) {
     turnOff();
     digitalWrite(SONOFF_LED, LOW);
@@ -110,16 +110,16 @@ void relayTemperatureToggle() {
 void setRelayInFunctionOfTemperature(float t) {
     if (!isnan(t) && t > -127) {
       if (t < onTemperature && !relayIsOn()) {
-        Serial.println("Turn on");
+        _logln("Turn on");
         turnOn();
       }
       else if (t > offTemperature && relayIsOn()) {
-        Serial.println("Turn off");
+        _logln("Turn off");
         turnOff();
       } 
     }
     else {
-      Serial.println("Temperature invalid, turn off");
+      _logln("Temperature invalid, turn off");
       turnOff();
     }
 }
@@ -153,24 +153,22 @@ void setup()
 
   sensors.begin();
 
-  IPAddress ip(192,168,1,222);
+  IPAddress ip(192,168,0,85);
   wifi.init(MYWIFISSID, MYWIFIPASSWORD, ip);
   wifi.connect();
 
   initController();
   server.begin();
+  initLogServer();
   Serial.println("HTTP server started");    
 }
-
 
 void loop()
 {
   server.handleClient();
   sonoffButtonTrigger();
   relayTemperatureToggle();
-  //wifi.check(); <----------------------- to uncomment
+  wifi.check();
+  handleLogServer();
 }
-
-
-
 

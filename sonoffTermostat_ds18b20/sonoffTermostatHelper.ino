@@ -7,7 +7,7 @@ void tick()
 void callUrls(String urls) {
   int currentPos = 0;
   int pos;
-  Serial.println("Call urls: ");
+  _logln("Call urls: ");
   while ((pos = urls.indexOf('|', currentPos)) > -1) {
     String url = urls.substring(currentPos, pos);
     wifi.callUrl(url);
@@ -16,12 +16,12 @@ void callUrls(String urls) {
 }
 
 bool saveFile(String file, String data) {
-  Serial.print("Save file: ");
-  Serial.println(file);
+  _log("Save file: ");
+  _logln(file);
 
   File configFile = SPIFFS.open(file, "w");
   if (!configFile) {
-    Serial.println("Failed to open file for writing");
+    _logln("Failed to open file for writing");
   }
   else {
     configFile.print(data);
@@ -32,12 +32,12 @@ bool saveFile(String file, String data) {
 String readFile(String file, String defaultValue) {
   String value = defaultValue;
 
-  //Serial.print("Read file: ");
-  //Serial.println(file);
+  //_log("Read file: ");
+  //_logln(file);
 
   File configFile = SPIFFS.open(file, "r");
   if (!configFile) {
-    Serial.println("Failed to open file for reading");
+    _logln("Failed to open file for reading");
   }
   else {
       value = configFile.readString();       

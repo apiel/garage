@@ -18,10 +18,10 @@ void sonoffButtonTrigger() {
         if (buttonState == LOW && currentState == HIGH) {
           long duration = millis() - startPress;
           if (duration < 1000) {
-            Serial.println("short press - toggle power");
+            _logln("short press - toggle power");
             toggle();
           } else if (duration < 5000) {
-            Serial.println("medium press - reset");
+            _logln("medium press - reset");
             restart();
           } 
         } else if (buttonState == HIGH && currentState == LOW) {
