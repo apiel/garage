@@ -119,3 +119,19 @@ void routeTemperatureStatus() {
   }
 }
 
+int powerOnIn = -1;
+int powerOffIn = -1;
+void routePowerPlan() {
+  _logln("Route power status");
+  int when = 0;
+  int forHowLong = 60; // Default 60min
+  if (server.hasArg("when")) {
+    when = server.arg("when").toInt();
+  }
+  if (server.hasArg("for")) {
+    forHowLong = server.arg("for").toInt();
+  }  
+  powerOnIn = when*60000 + millis();
+  powerOffIn = powerOnIn + forHowLong*60000;
+}
+

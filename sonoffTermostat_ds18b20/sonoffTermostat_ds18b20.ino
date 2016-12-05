@@ -86,7 +86,7 @@ void turnOff() {
 
 void toggle() {
   _logln("toggle power state");
-  _logln(powerState);
+  _logln("" + powerState);
   if (powerIsOn()) {
     turnOff();
     digitalWrite(SONOFF_LED, LOW);
