@@ -49,6 +49,9 @@ float offTemperature;
 int relayState = LOW; // Off
 int powerState = LOW; // Off
 
+int powerOnIn = -1;
+int powerOffIn = -1;
+
 boolean relayIsOn() {
   return relayState == HIGH;
 }
@@ -84,17 +87,38 @@ void turnOff() {
   }
 }
 
-void toggle() {
+void powerOff() {
+  _logln("Power off");
+  turnOff();
+  digitalWrite(SONOFF_LED, LOW);
+  powerState = LOW;  
+}
+
+void powerOn() {
+  _logln("Power on");
+  ticker.attach(2, tick);
+  powerState = HIGH;  
+}
+
+void powerToggle() {
   _logln("toggle power state");
   _logln("" + powerState);
   if (powerIsOn()) {
-    turnOff();
-    digitalWrite(SONOFF_LED, LOW);
-    powerState = LOW;
+    powerOff();
   }
   else {
-    ticker.attach(2, tick);
-    powerState = HIGH;
+    powerOn();
+  }
+}
+
+void powerHandle() {
+  if (powerOnIn > -1 && powerOnIn < millis()) {
+    powerOnIn = -1;
+    powerOn();
+  }
+  if (powerOffIn > -1 && powerOffIn < millis()) {
+    powerOffIn = -1;
+    powerOff();
   }
 }
 
@@ -170,5 +194,6 @@ void loop()
   relayTemperatureToggle();
   wifi.check();
   handleLogServer();
+  powerHandle();
 }
 

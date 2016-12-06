@@ -92,7 +92,7 @@ void routeRelayStatus() {
 }
 
 void routePowerToggle() {
-  toggle();
+  powerToggle();
   routePowerStatus();
 }
 
@@ -119,8 +119,6 @@ void routeTemperatureStatus() {
   }
 }
 
-int powerOnIn = -1;
-int powerOffIn = -1;
 void routePowerPlan() {
   _logln("Route power status");
   int when = 0;

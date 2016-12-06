@@ -19,7 +19,7 @@ void sonoffButtonTrigger() {
           long duration = millis() - startPress;
           if (duration < 1000) {
             _logln("short press - toggle power");
-            toggle();
+            powerToggle();
           } else if (duration < 5000) {
             _logln("medium press - reset");
             restart();
