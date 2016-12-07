@@ -1,6 +1,8 @@
 void initController() {
   server.on("/power/status", routePowerStatus);
   server.on("/power/toggle", routePowerToggle);
+  server.on("/power/on", routePowerOn);
+  server.on("/power/off", routePowerOff);
   server.on("/get/on/temperature", routeGetOnTemperature);
   server.on("/get/off/temperature", routeGetOffTemperature);
   server.on("/temperature/status", routeTemperatureStatus);
@@ -8,18 +10,22 @@ void initController() {
   //server.on("/get", routeGet); // we could implement get
   server.on("/set", routeSet);
   server.on("/firmware/update", routeFirmwareUpdate);
+  server.on("/restart", routeRestart);
   server.on("/", routeRoot);
   server.onNotFound(routeNotFound);  
 }
 
+// this could be part of a class variable
 boolean isValidVariable(String varName) {
   return varName == "OnTemperature"
       || varName == "OffTemperature"
       || varName == "onUrls"
       || varName == "offUrls"
+      || varName == "ipLastNumber"
       || varName == "mockTemp";
 }
 
+// this could be part of a class variable
 void routeSet() {
   int pos = server.args();
   if (pos > 0) {
@@ -50,13 +56,18 @@ void routeNotFound() {
 
 void routeRoot() {
   _logln("Route Root");
-  server.send ( 200, "text/plain", "Hello.");
+  server.send ( 200, "text/plain", "Hello. Version 1.0.1");
+}
+
+void routeRestart() {
+  _logln("Route Restart");
+  restart();
 }
 
 void routeFirmwareUpdate() {
   _logln("routeFirmwareUpdate");
-  if (server.hasArg("url")) {
-    String ip = server.arg("url");
+  if (server.hasArg("ip")) { // we should change this to ip
+    String ip = server.arg("ip");
     _logln(ip);
 
     server.send ( 200, "text/plain", "Try to update firmware.");
@@ -93,6 +104,16 @@ void routeRelayStatus() {
 
 void routePowerToggle() {
   powerToggle();
+  routePowerStatus();
+}
+
+void routePowerOn() {
+  powerOn();
+  routePowerStatus();
+}
+
+void routePowerOff() {
+  powerOff();
   routePowerStatus();
 }
 

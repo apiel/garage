@@ -177,7 +177,7 @@ void setup()
 
   sensors.begin();
 
-  IPAddress ip(192,168,0,85);
+  IPAddress ip(192,168,0,readFile("ipLastNumber", "85").toInt());
   wifi.init(MYWIFISSID, MYWIFIPASSWORD, ip);
   wifi.connect();
 

@@ -15,6 +15,7 @@ void callUrls(String urls) {
   }
 }
 
+// this could be part of a class variable
 bool saveFile(String file, String data) {
   _log("Save file: ");
   _logln(file);
@@ -29,6 +30,7 @@ bool saveFile(String file, String data) {
   return configFile;  
 }
 
+// this could be part of a class variable
 String readFile(String file, String defaultValue) {
   String value = defaultValue;
 
