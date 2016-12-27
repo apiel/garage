@@ -3,6 +3,7 @@ void initController() {
   server.on("/power/toggle", routePowerToggle);
   server.on("/power/on", routePowerOn);
   server.on("/power/off", routePowerOff);
+  server.on("/power/plan", routePowerPlan);
   server.on("/get/on/temperature", routeGetOnTemperature);
   server.on("/get/off/temperature", routeGetOffTemperature);
   server.on("/temperature/status", routeTemperatureStatus);
@@ -56,7 +57,7 @@ void routeNotFound() {
 
 void routeRoot() {
   _logln("Route Root");
-  server.send ( 200, "text/plain", "Hello. Version 1.0.1");
+  server.send ( 200, "text/plain", "Hello. Version 1.0.2");
 }
 
 void routeRestart() {

@@ -125,8 +125,8 @@ void powerHandle() {
 void relayTemperatureToggle() {
   if (powerIsOn()) {
     sensors.requestTemperatures();
-    //float t = sensors.getTempCByIndex(0);
-    float t = readFile("mockTemp", "21").toFloat();
+    float t = sensors.getTempCByIndex(0);
+    //float t = readFile("mockTemp", "21").toFloat();
     setRelayInFunctionOfTemperature(t);
   }
 }
