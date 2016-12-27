@@ -184,6 +184,7 @@ void setup()
   initController();
   server.begin();
   initLogServer();
+  remoteStatusUrlInit();
   Serial.println("HTTP server started");    
 }
 
@@ -191,7 +192,9 @@ void loop()
 {
   server.handleClient();
   sonoffButtonTrigger();
-  relayTemperatureToggle();
+  if (!remoteStatusUrlCheck()) {
+    relayTemperatureToggle();
+  }
   wifi.check();
   handleLogServer();
   powerHandle();

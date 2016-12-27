@@ -23,7 +23,8 @@ boolean isValidVariable(String varName) {
       || varName == "onUrls"
       || varName == "offUrls"
       || varName == "ipLastNumber"
-      || varName == "mockTemp";
+      || varName == "mockTemp"
+      || varName == "remoteStatusUrl";
 }
 
 // this could be part of a class variable
@@ -57,7 +58,7 @@ void routeNotFound() {
 
 void routeRoot() {
   _logln("Route Root");
-  server.send ( 200, "text/plain", "Hello. Version 1.0.2");
+  server.send ( 200, "text/plain", "Hello. Version 1.0.3");
 }
 
 void routeRestart() {
@@ -95,7 +96,7 @@ void routeGetOffTemperature() {
 
 void routeRelayStatus() {
   _logln("Route relay status");
-  if (relayIsOn()) {
+  if (powerIsOn() && relayIsOn()) {
     server.send ( 200, "text/plain", "{\"status\": \"on\"}");
   }
   else {
