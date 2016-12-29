@@ -2,34 +2,38 @@ long lastCheckForRemoteStatusUrl = millis();
 String remoteStatusUrl;
 
 void remoteStatusUrlInit() {
-  String remoteStatusUrl = readFile("remoteStatusUrl", "");
+  remoteStatusUrl = readFile("remoteStatusUrl", "");
 }
 
 bool remoteStatusUrlCheck() {
+  //_logln(remoteStatusUrl);
   if (remoteStatusUrl.length()) {
    if (powerIsOn() && millis() - lastCheckForRemoteStatusUrl > 60000) { // every minute
      lastCheckForRemoteStatusUrl = millis();
-     Serial.print("Call remote status url: ");
-     Serial.println(remoteStatusUrl);
+     _logln("Call remote status url: ");
+     _logln(remoteStatusUrl);
      int httpCode = wifi.callUrl(remoteStatusUrl);
-     Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+     //_log("[HTTP] GET... code:");
+     //_logln(httpCode); //tostring
      if(httpCode > 0 && httpCode == HTTP_CODE_OK) {
-       Serial.println(wifi.lastPayload);
+       _logln(wifi.lastPayload);
        if (wifi.lastPayload.indexOf("\"on\"") > -1 ) {
-         Serial.println("Remote status url on, turn on relay.");
+         _logln("Remote status url on, turn on relay.");
          turnOn();
        }
        else {
-         Serial.println("Remote status url not on, turn off relay.");
+         _logln("Remote status url not on, turn off relay.");
          turnOff();
        }
      } 
      else {
-       Serial.println("Cant reach remote status url, turn off relay.");
+       _logln("Cant reach remote status url, turn off relay.");
        turnOff();
      }
    }
+   //_logln("Remote url on");
    return true;
   }
+  //_logln("Remote url off");
   return false;
 }

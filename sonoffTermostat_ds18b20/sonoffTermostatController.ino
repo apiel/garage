@@ -8,7 +8,7 @@ void initController() {
   server.on("/get/off/temperature", routeGetOffTemperature);
   server.on("/temperature/status", routeTemperatureStatus);
   server.on("/relay/status", routeRelayStatus);
-  //server.on("/get", routeGet); // we could implement get
+  server.on("/get", routeGet);
   server.on("/set", routeSet);
   server.on("/firmware/update", routeFirmwareUpdate);
   server.on("/restart", routeRestart);
@@ -16,6 +16,7 @@ void initController() {
   server.onNotFound(routeNotFound);  
 }
 
+// We should load all the variable in a list at the begening
 // this could be part of a class variable
 boolean isValidVariable(String varName) {
   return varName == "OnTemperature"
@@ -50,6 +51,19 @@ void routeSet() {
   }
 }
 
+void routeGet() {
+  _logln("routeGet");
+  if (server.hasArg("var")) {
+    String varName = server.arg("var");
+    String value = readFile(varName, "");
+
+    server.send ( 200, "text/plain", value);
+  }
+  else {
+    server.send ( 400, "text/plain", "Get value parameter missing. Please provide a var.");
+  }  
+}
+
 void routeNotFound() {
   _logln("Route Not Found ");
   _logln(server.uri());
@@ -68,7 +82,7 @@ void routeRestart() {
 
 void routeFirmwareUpdate() {
   _logln("routeFirmwareUpdate");
-  if (server.hasArg("ip")) { // we should change this to ip
+  if (server.hasArg("ip")) { 
     String ip = server.arg("ip");
     _logln(ip);
 
