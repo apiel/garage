@@ -1,5 +1,8 @@
+String Version = "1.0.4";
+
 void initController() {
   server.on("/power/status", routePowerStatus);
+  server.on("/status", routeStatus);
   server.on("/power/toggle", routePowerToggle);
   server.on("/power/on", routePowerOn);
   server.on("/power/off", routePowerOff);
@@ -7,6 +10,7 @@ void initController() {
   server.on("/get/on/temperature", routeGetOnTemperature);
   server.on("/get/off/temperature", routeGetOffTemperature);
   server.on("/temperature/status", routeTemperatureStatus);
+  server.on("/relay/status/force", routeRelayStatusForce);
   server.on("/relay/status", routeRelayStatus);
   server.on("/get", routeGet);
   server.on("/set", routeSet);
@@ -72,7 +76,7 @@ void routeNotFound() {
 
 void routeRoot() {
   _logln("Route Root");
-  server.send ( 200, "text/plain", "Hello. Version 1.0.3");
+  server.send ( 200, "text/plain", "Hello. Version " + Version);
 }
 
 void routeRestart() {
@@ -118,6 +122,16 @@ void routeRelayStatus() {
   }
 }
 
+void routeRelayStatusForce() {
+  _logln("Route relay status force");
+  if (relayIsOnForce()) {
+    server.send ( 200, "text/plain", "{\"status\": \"on\"}");
+  }
+  else {
+    server.send ( 200, "text/plain", "{\"status\": \"off\"}");
+  }
+}
+
 void routePowerToggle() {
   powerToggle();
   routePowerStatus();
@@ -154,6 +168,27 @@ void routeTemperatureStatus() {
     String response =  "{\"status\": " + String(t) + "}";
     server.send ( 200, "text/plain", response);
   }
+}
+
+void routeStatus() {
+  _logln("Route status");
+  String output = "Thermostat status\n\nVersion: " + Version + "\n";
+  
+  sensors.requestTemperatures();
+  float t = sensors.getTempCByIndex(0);
+  output += "Temperature: " + String(t) + "\n";
+
+  output += "Power: " + String(powerIsOn()?"on":"off") + "\n";
+  output += "powerState: " + String(powerState) + "\n";
+
+  output += "Relay: " + String(powerIsOn() && relayIsOn()?"on":"off") + "\n";
+  output += "RelayIsOnForce: " + String(relayIsOnForce()?"on":"off") + "\n";
+  output += "relayState: " + String(relayState) + "\n";  
+
+  output += "On temperature: " + String(getOnTemperature()) + "\n";
+  output += "Off temperature: " + String(getOffTemperature()) + "\n";
+
+  server.send ( 200, "text/plain", output);
 }
 
 void routePowerPlan() {

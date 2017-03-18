@@ -52,6 +52,10 @@ int powerState = LOW; // Off
 int powerOnIn = -1;
 int powerOffIn = -1;
 
+boolean relayIsOnForce() {
+  return digitalRead(SONOFF_RELAY) == HIGH;
+}
+
 boolean relayIsOn() {
   return relayState == HIGH;
 }
@@ -69,7 +73,7 @@ float getOffTemperature() {
 }
 
 void turnOn() {
-  if (powerIsOn() && !relayIsOn()) {
+  if (powerIsOn()) {
     relayState = HIGH;
     ticker.attach(0.5, tick);
     digitalWrite(SONOFF_RELAY, relayState);
@@ -78,7 +82,7 @@ void turnOn() {
 }
 
 void turnOff() {
-  if (powerIsOn() && relayIsOn()) {
+  if (powerIsOn()) {
     ticker.detach();
     relayState = LOW;
     ticker.attach(2, tick);
@@ -90,7 +94,6 @@ void turnOff() {
 void powerOff() {
   _logln("Power off");
   turnOff();
-  digitalWrite(SONOFF_LED, LOW);
   powerState = LOW;  
 }
 
@@ -142,7 +145,7 @@ void setRelayInFunctionOfTemperature(float t) {
         turnOff();
       } 
     }
-    else {
+    else if (relayIsOn()) {
       _logln("Temperature invalid, turn off");
       turnOff();
     }
