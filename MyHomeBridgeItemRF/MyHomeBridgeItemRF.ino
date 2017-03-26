@@ -6,7 +6,7 @@
 const char* wifiSsid = MYWIFISSID;
 const char* wifiPassword = MYWIFIPASSWORD;
 
-IPAddress ip(192,168,0,31);
+IPAddress ip(192,168,0,44);
 IPAddress gateway(192,168,0,1);
 IPAddress subnet(255,255,255,0);
 
