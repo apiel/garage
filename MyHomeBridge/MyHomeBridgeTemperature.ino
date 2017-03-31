@@ -1,16 +1,21 @@
+#include "DHT.h"
+#define DHTTYPE DHT22
+DHT dht(pinDHT22, DHTTYPE, 11);
+
 double prevTemp;
-double curTemp;
+double prevHumidity;
 
 void readTemp() {
- double Temp;
- int val = analogRead(0); 
- Temp = log(((10240000/val) - 10000));
- Temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * Temp * Temp ))* Temp );
- Temp = Temp - 273.15;              // Convert Kelvin to Celsius
+ double Temp = dht.readTemperature();
+ double Humidity = dht.readHumidity();
 
  if ((Temp - prevTemp) > 0.5) {
   prevTemp = Temp;
   Serial.println("Temperature changed: " + String(Temp));
  }
-}
 
+ if ((Humidity - prevHumidity) > 0.5) {
+  prevHumidity = Humidity;
+  Serial.println("Humidity changed: " + String(Humidity));
+ } 
+}

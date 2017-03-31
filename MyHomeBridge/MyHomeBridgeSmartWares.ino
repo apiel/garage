@@ -9,32 +9,33 @@ byte command = 0;
 bool group = false;
 
 void smartwaresRead(unsigned int pulseWidth) { // homeeasy
-    if(latchStage == 0 && pulseWidth > 9480 && pulseWidth < 11500)
+    if(pulseWidth > 9480 && pulseWidth < 11500)
     { // pause between messages
       Serial.println("latch");
       latchStage = 1;
     }
     else if(latchStage == 1 && pulseWidth > 2350 && pulseWidth < 2750)
     { // advanced protocol latch
-      latchStage = 3;
+      latchStage = 2;
       sender = 0;
     }
-    else if(latchStage == 3)
+    else if(latchStage == 2)
     { // advanced protocol data
       
-      if(pulseWidth > 150 && pulseWidth < 365)
+      if(pulseWidth > 130 && pulseWidth < 450)
       {
         bit = 0;
       }
-      else if(pulseWidth > 1000 && pulseWidth < 1360)
+      else if(pulseWidth > 950 && pulseWidth < 1450)
       {
         bit = 1;
       }
       else
       { // start over if the low pulse was out of range        
-        latchStage = 0;
-        bitCount = 0;
-        recipient = 0;
+        Serial.println("easyhome error out of range " + String(pulseWidth)); 
+//        latchStage = 0;
+//        bitCount = 0;
+//        recipient = 0;
       }
       
       if(bitCount % 2 == 1)

@@ -3,6 +3,7 @@
 
 int pinRfReceiver = 5;
 int pinPir = 4;
+int pinDHT22 = 0;
 
 RCSwitch rcSwitch = RCSwitch();
 
