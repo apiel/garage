@@ -5,6 +5,8 @@ int pinRfReceiver = 5;
 int pinPir = 4;
 int pinDHT22 = 0;
 
+int lastRead;
+
 RCSwitch rcSwitch = RCSwitch();
 
 void setup() {
@@ -22,6 +24,10 @@ void loop() {
   unsigned int pulseWidth = pulseIn(pinRfReceiver, LOW);
   rcSwitchRead();
   smartwaresRead(pulseWidth);
-  readTemp();
   readLight();
+  if (millis()-lastRead > 30000) { // read temp only every 30 seconds
+    lastRead = millis();
+    Serial.println("Read");
+    readTemp();
+  }
 }
