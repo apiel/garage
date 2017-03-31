@@ -9,12 +9,12 @@ void readTemp() {
  double Temp = dht.readTemperature();
  double Humidity = dht.readHumidity();
 
- if ((Temp - prevTemp) > 0.5) {
+ if (abs(Temp - prevTemp) > 0.5) {
   prevTemp = Temp;
   Serial.println("Temperature changed: " + String(Temp));
  }
 
- if ((Humidity - prevHumidity) > 0.5) {
+ if (abs(Humidity - prevHumidity) > 0.5) {
   prevHumidity = Humidity;
   Serial.println("Humidity changed: " + String(Humidity));
  } 

@@ -23,4 +23,5 @@ void loop() {
   rcSwitchRead();
   smartwaresRead(pulseWidth);
   readTemp();
+  readLight();
 }
