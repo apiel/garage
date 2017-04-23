@@ -2,12 +2,15 @@
 #define DHTTYPE DHT22
 DHT dht(pinDHT22, DHTTYPE, 11);
 
-double prevTemp;
-double prevHumidity;
+double prevTemp = 0;
+double prevHumidity = 0;
 
 void readTemp() {
  double Temp = dht.readTemperature();
  double Humidity = dht.readHumidity();
+
+ Serial.println("T: " + String(Temp));
+ Serial.println("H: " + String(Humidity));
 
  if (abs(Temp - prevTemp) > 0.5) {
   prevTemp = Temp;
