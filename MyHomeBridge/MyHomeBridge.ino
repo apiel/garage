@@ -19,6 +19,22 @@ int lastRead;
 
 RCSwitch rcSwitch = RCSwitch();
 
+#define AIO_SERVER      "192.168.0.13"
+#define AIO_SERVERPORT  1883
+#define AIO_USERNAME    "helo123"
+#define AIO_KEY         "key"
+
+WiFiClient client;
+bool mqttIsConnected = false;
+Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_USERNAME, AIO_KEY);
+
+Adafruit_MQTT_Publish pirTopicPub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/pir");
+Adafruit_MQTT_Publish photocellTopicPub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/photocell");
+Adafruit_MQTT_Publish humidityTopicPub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/humidity");
+Adafruit_MQTT_Publish temperatureTopicPub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/temperature");
+Adafruit_MQTT_Publish remoteTopicPub = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/remote");
+Adafruit_MQTT_Subscribe remoteTopicSub = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/remote");
+
 const char *APssid = "esp";
 const char *APpassword = "abc123";
 
@@ -38,6 +54,8 @@ void setup() {
   pinMode(pinPir, INPUT);
   rcSwitch.enableReceive(pinRfReceiver);
   attachInterrupt(digitalPinToInterrupt(pinPir), pirChanged, CHANGE);
+
+  MQTT_init();
 
 /*
   smartwaresSend("1010100110101001011010100110011010100110011010011001011010101001");
@@ -69,16 +87,18 @@ void loop() {
   wifi.check();
 
   if (wifi.isConnected) {
-    MQTT_connect();
-
-    unsigned int pulseWidth = pulseIn(pinRfReceiver, LOW);
-    rcSwitchRead();
-    smartwaresRead(pulseWidth);
-    readLight();
-    if (millis()-lastRead > 30000) { // read temp only every 30 seconds
-      lastRead = millis();
-      Serial.println("Read");
-      readTemp();
-    }    
+      mqttIsConnected = MQTT_connect();
+      MQTT_read();
+    // if (mqttIsConnected = MQTT_connect()) {
+      unsigned int pulseWidth = pulseIn(pinRfReceiver, LOW);
+      rcSwitchRead();
+      smartwaresRead(pulseWidth);
+      readLight();
+      if (millis()-lastRead > 30000) { // read temp only every 30 seconds
+        lastRead = millis();
+        Serial.println("Read");
+        readTemp();
+      }    
+    // }
   }
 }

@@ -1,25 +1,34 @@
-#define AIO_SERVER      "192.168.0.13"
-#define AIO_SERVERPORT  1883
-#define AIO_USERNAME    "helo123"
-#define AIO_KEY         "key"
+void remoteCallback(char *data, uint16_t len) {
+  Serial.print("Hey we're in a remote callback, the value is: ");
+  Serial.println(data);
+}
 
-WiFiClient client;
-Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_USERNAME, AIO_KEY);
+void MQTT_init() {
+  remoteTopicSub.setCallback(remoteCallback);
+  mqtt.subscribe(&remoteTopicSub);    
+}
 
-void MQTT_connect() {
+bool MQTT_connect() {
   int8_t ret;
 
-  if(! mqtt.ping()) {
-    mqtt.disconnect();
+  if (!mqtt.connected()) {
+    Serial.print("Connecting to MQTT... ");
+    if ((ret = mqtt.connect()) != 0) {
+       Serial.println(mqtt.connectErrorString(ret));
+       return false;
+    }
+    Serial.println("MQTT Connected!");    
   }
-  else if (mqtt.connected()) {
-    return;
-  }
-
-  Serial.print("Connecting to MQTT... ");
-  if ((ret = mqtt.connect()) != 0) {
-     Serial.println(mqtt.connectErrorString(ret));
-     return;
-  }
-  Serial.println("MQTT Connected!");
+  return true;
 }
+
+void MQTT_read() {
+  Adafruit_MQTT_Subscribe *subscription;
+  while ((subscription = mqtt.readSubscription(0))) {
+    if (subscription == &remoteTopicSub) {
+      Serial.print("Got remote: ");
+      Serial.println((char *)remoteTopicSub.lastread);
+    }
+  }  
+}
+

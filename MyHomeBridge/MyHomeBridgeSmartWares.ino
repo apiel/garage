@@ -1,30 +1,22 @@
 unsigned int latchStage = 0;
 signed int bitCount = 0;
-byte bit = 0;
-byte prevBit = 0;
-
-unsigned long sender = 0;
-unsigned int recipient = 0;
-byte command = 0;
-bool group = false;
+byte bit = 0; // we could skip bit
+byte prevBit = 0; // we could skip prevBit
 
 String bits = "";
 
 void smartwaresRead(unsigned int pulseWidth) { // homeeasy
     if(pulseWidth > 9480 && pulseWidth < 11500)
     { // pause between messages
-      Serial.println("latch");
+      // Serial.println("latch");
       latchStage = 1;
       
       bits = "";
-      sender = 0;
-      recipient = 0;
       bitCount = 0;      
     }
     else if(latchStage == 1 && pulseWidth > 2350 && pulseWidth < 2750)
     { // advanced protocol latch
       latchStage = 2;
-      sender = 0;
     }
     else if(latchStage == 2)
     { // advanced protocol data
@@ -41,10 +33,7 @@ void smartwaresRead(unsigned int pulseWidth) { // homeeasy
       }
       else
       { // start over if the low pulse was out of range        
-        Serial.println("easyhome error out of range " + String(pulseWidth)); 
-//        latchStage = 0;
-//        bitCount = 0;
-//        recipient = 0;
+        // Serial.println("easyhome error out of range " + String(pulseWidth)); 
       }
       
       if(bitCount % 2 == 1)
@@ -52,41 +41,18 @@ void smartwaresRead(unsigned int pulseWidth) { // homeeasy
         if((prevBit ^ bit) == 0)
         { // must be either 01 or 10, cannot be 00 or 11
           latchStage = 0;
-          // bitCount = -1;
-          Serial.println("easyhome error bit " + String(pulseWidth)); 
-        }
-        else if(bitCount < 53)
-        { // first 26 data bits
-          
-          sender <<= 1;
-          sender |= prevBit;
-        }
-        else if(bitCount == 53)
-        { // 26th data bit
-          group = prevBit;
-        }
-        else if(bitCount == 55)
-        { // 27th data bit
-          command = prevBit;
-        }
-        else
-        { // last 4 data bits
-          recipient <<= 1;
-          recipient |= prevBit;
+          // Serial.println("easyhome error bit " + String(pulseWidth)); 
         }
       }
       
       prevBit = bit;
       bitCount++;
       
-      if(bitCount == 64)
+      if(bitCount == 64) // instead of bitcound, we could use bits.length()
       { // message is complete
         latchStage = 0;
-        Serial.print("easyhome success: " + String(sender));     
-        Serial.print(" r: " + String(recipient));
-        Serial.print(" c: " +String(command));
-        Serial.println(" g: " +String(group));
         Serial.println("easyhome binary: " + bits);
+//        remoteTopicPub.publish("easyhome " + String(bits)); // .c_str()
       }
     }
 }
