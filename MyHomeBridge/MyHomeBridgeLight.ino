@@ -7,7 +7,6 @@ void readLight() {
     prevLight = light;
     Serial.println("Light changed: " + String(light));
 
-    // photocellTopicPub.publish(light);
   }   
 }
 

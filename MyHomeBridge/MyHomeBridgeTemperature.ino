@@ -15,12 +15,12 @@ void readTemp() {
  if (abs(Temp - prevTemp) > 0.5) {
   prevTemp = Temp;
   Serial.println("Temperature changed: " + String(Temp));
-  temperatureTopicPub.publish(Temp);
+  send("temperature " + String(Temp));
  }
 
  if (abs(Humidity - prevHumidity) > 0.5) {
   prevHumidity = Humidity;
   Serial.println("Humidity changed: " + String(Humidity));
-  //humidityTopicPub.publish(Humidity);
+  send("humidity " + String(Humidity));
  } 
 }

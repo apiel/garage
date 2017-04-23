@@ -1,10 +1,12 @@
-unsigned int pirValue;
+bool prevPirValue;
+bool pirValue;
 
-void pirChanged() {
+void pirRead() {
   pirValue = digitalRead(pinPir);
-  Serial.println("Pir changed: " + String(pirValue));
-
-Serial.println(mqttIsConnected);
-  // if (mqttIsConnected) pirTopicPub.publish(pirValue);
+  if (pirValue != prevPirValue) {
+    prevPirValue = pirValue;
+    Serial.println("Pir changed: " + String(pirValue));
+    send("pir " + String(pirValue));
+  }
 }
 

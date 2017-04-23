@@ -52,7 +52,7 @@ void smartwaresRead(unsigned int pulseWidth) { // homeeasy
       { // message is complete
         latchStage = 0;
         Serial.println("easyhome binary: " + bits);
-//        remoteTopicPub.publish("easyhome " + String(bits)); // .c_str()
+        send("easyhome " + String(bits));
       }
     }
 }
