@@ -1,5 +1,6 @@
 void send(String msg) 
 {
+    // we could give the choice between socket message or http request
     client.print(device + " " + msg + "\n");  
 }
 
