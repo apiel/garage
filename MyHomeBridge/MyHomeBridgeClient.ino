@@ -1,4 +1,4 @@
-void send(String msg) 
+void send(String msg, byte force = 0) 
 {
     // we could give the choice between socket message or http request
     client.print(device + " " + msg + "\n");  
@@ -19,10 +19,26 @@ bool connect()
 }
 
 void receive()
-{
+{  
   if (connect() && client.available()) {
-    String line = client.readStringUntil('\r');
-    Serial.print(line);
+    // client.readStringUntil('\r');
+    int incomingByte;
+    String line = "";
+    while ((incomingByte = client.read()) != -1) {
+      line += char(incomingByte);
+    }
+
+    int delimiter = line.indexOf(' ');
+    if (delimiter != -1) {
+      String action = line.substring(0, delimiter);
+      String data = line.substring(delimiter+1, line.indexOf('\n')); // line.indexOf('\n') remove possible \n
+
+      Serial.println("Action: " + action + " data: " + data);
+      if (action == "homeeasy") {
+        smartwaresSendMulti(data);
+      } 
+    }
+    // Serial.print(line);
   }  
 }
 

@@ -27,8 +27,8 @@ void smartwaresRead(unsigned int pulseWidth) { // homeeasy
             
       if(bits.length() == 64) { // instead of bitcound, we could use bits.length()
         latchStage = 0;
-        Serial.println("easyhome binary: " + bits);
-        send("easyhome " + String(bits));
+        Serial.println("homeeasy binary: " + bits);
+        send("homeeasy " + String(bits));
       }
     }
 }
@@ -53,5 +53,13 @@ void smartwaresSend(String code) {
         doPulse(1200);
       }
     }
+}
+
+void smartwaresSendMulti(String code) {
+    smartwaresSend(code);
+    smartwaresSend(code);
+    smartwaresSend(code);
+    smartwaresSend(code);
+    smartwaresSend(code);  
 }
 
