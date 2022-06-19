@@ -57,7 +57,7 @@ void setup()
   initBtnState = lastBtnState = digitalRead(PIN_BTN);
 
   EEPROM.begin(1);
-  mode = EEPROM.read(0);
+  mode = EEPROM.read(0) % 3;
   Serial.printf("Mode %d\n", mode + 1);
 
   startTime = millis();
