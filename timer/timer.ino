@@ -27,11 +27,14 @@ void relayOff()
 
 int initBtnState = 0;
 int lastBtnState = 0;
-void handleBtn() {
+void handleBtn()
+{
   int val = digitalRead(PIN_BTN);
-  if (lastBtnState != val) {
+  if (lastBtnState != val)
+  {
     lastBtnState = val;
-    if (val != initBtnState) {
+    if (val != initBtnState)
+    {
       Serial.printf("Change mode %d\n", mode + 1);
       mode = ((mode + 1) % 3);
       EEPROM.write(0, mode);
@@ -63,21 +66,26 @@ void setup()
 
 void loop()
 {
-  if (relayState == RELAY_ON) {
-    if (mode == 0 && millis() > 30 * 60 * 1000) {
+  if (relayState == RELAY_ON)
+  {
+    if (mode == 0 && millis() > 30 * 60 * 1000)
+    {
       Serial.printf("Off after 30min (%d)\n", millis());
       relayOff();
     }
-    if (mode == 1 && millis() > 45 * 60 * 1000) {
+    if (mode == 1 && millis() > 45 * 60 * 1000)
+    {
       Serial.printf("Off after 45min (%d)\n", millis());
       relayOff();
     }
-    if (mode == 2 && millis() > 60 * 60 * 1000) {
+    if (mode == 2 && millis() > 60 * 60 * 1000)
+    {
       Serial.printf("Off after 1h (%d)\n", millis());
       relayOff();
     }
 
-    for (int i = 0; i < mode + 1; i++) {
+    for (int i = 0; i < mode + 1; i++)
+    {
       digitalWrite(PIN_LED, LOW);
       delay(100);
       digitalWrite(PIN_LED, HIGH);
